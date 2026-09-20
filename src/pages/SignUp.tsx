@@ -1,0 +1,246 @@
+import { useState } from "react"
+import { useNavigate, Link } from "react-router-dom"
+import { Eye, EyeOff, Briefcase, User, Building2, Sparkles, AlertCircle } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import { useAuth, type UserRole } from "../context/AuthContext"
+import { api } from "../lib/api"
+
+export default function SignUp() {
+  const navigate = useNavigate()
+  const { login } = useAuth()
+  const [role, setRole] = useState<UserRole>("recruiter")
+  const [showPassword, setShowPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [form, setForm] = useState({
+    fullName: "",
+    email: "",
+    company: "",
+    password: "",
+    confirm: ""
+  })
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setErrorMessage(null)
+    setForm({ ...form, [e.target.name]: e.target.value })
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setErrorMessage(null)
+
+    if (form.password !== form.confirm) {
+      setErrorMessage("Passwords do not match. Please verify both password fields.")
+      return
+    }
+
+    if (form.password.length < 6) {
+      setErrorMessage("Password must be at least 6 characters long.")
+      return
+    }
+
+    setIsLoading(true)
+
+    try {
+      const res = await api.register({
+        fullName: form.fullName,
+        email: form.email,
+        password: form.password,
+        role: role,
+        company: form.company
+      })
+
+      if (res.user) {
+        login(res.user)
+        if (role === "recruiter") {
+          navigate("/recruiter/dashboard")
+        } else {
+          navigate("/candidate/dashboard")
+        }
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || "Registration failed. Please check your information.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-white flex items-center justify-center px-4 py-12 relative overflow-hidden transition-colors duration-200">
+      {/* Decorative blobs */}
+      <div className="absolute top-[-60px] left-[-60px] w-64 h-64 rounded-full bg-gradient-to-br from-indigo-500 to-blue-400 opacity-25 dark:opacity-60 blur-[50px] pointer-events-none" />
+      <div className="absolute bottom-[-60px] right-[-60px] w-52 h-52 rounded-full bg-gradient-to-br from-orange-300 to-amber-400 opacity-25 dark:opacity-60 blur-[50px] pointer-events-none" />
+
+      {/* Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="relative z-10 w-full max-w-md bg-white/95 dark:bg-[#16161c]/90 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-2xl px-8 py-9 shadow-2xl transition-colors duration-200"
+      >
+        {/* Back to Home & Header */}
+        <div className="flex items-center justify-between mb-6">
+          <Link to="/" className="text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center gap-1 transition-colors">
+            ← Back to Home
+          </Link>
+          <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 tracking-wider">HIREFLOW</span>
+        </div>
+
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Create Account</h1>
+        <p className="text-slate-600 dark:text-slate-400 text-sm mb-6">Join the next-generation hiring intelligence platform.</p>
+
+        {/* Role Toggle */}
+        <div className="flex gap-2 mb-4 bg-slate-100 dark:bg-[#0f0f14] rounded-xl p-1 border border-slate-200 dark:border-white/5">
+          {(["recruiter", "candidate"] as UserRole[]).map((r) => (
+            <button
+              key={r}
+              type="button"
+              onClick={() => {
+                setRole(r)
+                setErrorMessage(null)
+              }}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold capitalize transition-all duration-200 ${
+                role === r
+                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+              }`}
+            >
+              {r === "recruiter" ? <Briefcase className="w-4 h-4" /> : <User className="w-4 h-4" />}
+              {r}
+            </button>
+          ))}
+        </div>
+
+        {/* Error Alert Box */}
+        {errorMessage && (
+          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 rounded-xl text-xs flex items-start gap-2 shadow-sm animate-fade-in">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={role}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+            >
+              {/* Full Name */}
+              <div className="mb-4">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">Full Name</label>
+                <input
+                  name="fullName"
+                  type="text"
+                  required
+                  value={form.fullName}
+                  onChange={handleChange}
+                  placeholder={role === "recruiter" ? "Sarah Jenkins" : "Alex Rivera"}
+                  className="w-full bg-slate-50 dark:bg-[#22222a] text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 border border-slate-300 dark:border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                />
+              </div>
+
+              {/* Email */}
+              <div className="mb-4">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
+                  {role === "recruiter" ? "Work Email" : "Email Address"}
+                </label>
+                <input
+                  name="email"
+                  type="email"
+                  required
+                  value={form.email}
+                  onChange={handleChange}
+                  placeholder={role === "recruiter" ? "sarah@company.com" : "alex@developer.io"}
+                  className="w-full bg-slate-50 dark:bg-[#22222a] text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 border border-slate-300 dark:border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                />
+              </div>
+
+              {/* Company (Recruiter only) */}
+              {role === "recruiter" && (
+                <div className="mb-4">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">Company Name</label>
+                  <div className="relative">
+                    <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <input
+                      name="company"
+                      type="text"
+                      required
+                      value={form.company}
+                      onChange={handleChange}
+                      placeholder="e.g. Acme Corp, XYZ"
+                      className="w-full bg-slate-50 dark:bg-[#22222a] text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 border border-slate-300 dark:border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Password */}
+              <div className="mb-4">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">Password</label>
+                <div className="relative">
+                  <input
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    required
+                    value={form.password}
+                    onChange={handleChange}
+                    placeholder="Min. 8 characters"
+                    className="w-full bg-slate-50 dark:bg-[#22222a] text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 border border-slate-300 dark:border-white/10 rounded-xl px-4 py-3 pr-11 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Confirm Password */}
+              <div className="mb-6">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">Confirm Password</label>
+                <input
+                  name="confirm"
+                  type="password"
+                  required
+                  value={form.confirm}
+                  onChange={handleChange}
+                  placeholder="Re-enter password"
+                  className="w-full bg-slate-50 dark:bg-[#22222a] text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 border border-slate-300 dark:border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                />
+              </div>
+
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3.5 rounded-xl transition-all duration-200 text-sm mb-6 flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/25 hover:scale-[1.01]"
+              >
+                {isLoading ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 text-teal-300" />
+                    Create {role === "recruiter" ? "Recruiter" : "Candidate"} Account
+                  </>
+                )}
+              </button>
+            </motion.div>
+          </AnimatePresence>
+        </form>
+
+        {/* Footer */}
+        <p className="text-center text-slate-600 dark:text-slate-400 text-sm">
+          Already have an account?{" "}
+          <Link to="/signin" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 font-semibold transition-colors">
+            Sign In
+          </Link>
+        </p>
+      </motion.div>
+    </div>
+  )
+}
