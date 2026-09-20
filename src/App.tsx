@@ -9,7 +9,6 @@ import { FeatureGrid } from "./components/sections/FeatureGrid"
 import { Trust } from "./components/sections/Trust"
 import { UseCases } from "./components/sections/UseCases"
 import { DashboardPreview } from "./components/sections/DashboardPreview"
-import { Pricing } from "./components/sections/Pricing"
 import { Testimonials } from "./components/sections/Testimonials"
 import SignIn from "./pages/SignIn"
 import SignUp from "./pages/SignUp"
@@ -31,7 +30,6 @@ function LandingPage() {
         <Trust />
         <UseCases />
         <DashboardPreview />
-        <Pricing />
         <Testimonials />
       </main>
       <Footer />
